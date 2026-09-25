@@ -29,5 +29,5 @@ def test_generate_evidence():
     
     # Calculate SHA-256 checksum
     actual_hash = hashlib.sha256(evidence_bytes).hexdigest()
-    #checksum_file.write_text(actual_hash)
-    checksum_file.write_text("fakehash123")
+    checksum_file.write_text(actual_hash)
+    #checksum_file.write_text("fakehash123")
