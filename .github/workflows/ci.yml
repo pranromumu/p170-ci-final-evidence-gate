@@ -1,0 +1,75 @@
+#_________________________________________________________
+#Notice we have three jobs: test, verify, and gate. 
+#The gate job does not use if always(). It relies purely 
+#on needs: verify, which means if verify fails, the gate 
+#is skipped, and the workflow turns red!
+#_________________________________________________________
+
+name: CI Final Evidence Gate
+
+on: [push]
+
+jobs:
+  # ──────────────────────────────────────────────────────────────────
+  # JOB 1: TEST
+  # ──────────────────────────────────────────────────────────────────
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Run Pytest
+        run: pytest -v -s
+      - name: Upload Evidence Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: p170-evidence
+          path: artifacts/
+          retention-days: 7
+
+  # ──────────────────────────────────────────────────────────────────
+  # JOB 2: VERIFY
+  # ──────────────────────────────────────────────────────────────────
+  verify:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Download Evidence Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: p170-evidence
+          path: downloaded-artifacts
+      - name: Verify Checksum
+        run: python verify.py downloaded-artifacts
+
+  # ──────────────────────────────────────────────────────────────────
+  # JOB 3: GATE
+  # ──────────────────────────────────────────────────────────────────
+  gate:
+    needs: verify
+    runs-on: ubuntu-latest
+    steps:
+      - name: Final Gate
+        run: |
+          echo "================================="
+          echo "P170 FINAL EVIDENCE GATE"
+          echo "================================="
+          echo ""
+          echo "Test execution:      PASS"
+          echo "Artifact upload:     PASS"
+          echo "SHA-256 verification: PASS"
+          echo "Evidence integrity:  PASS"
+          echo ""
+          echo "FINAL GATE: PASS ✅"
